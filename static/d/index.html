@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,700italic,400,300,700" rel="stylesheet">
+<link rel="stylesheet" href="/vendor/makerstrap.min.css">
+<link rel="stylesheet" href="/vendor/font-awesome/css/font-awesome.css">
+<link rel="stylesheet" href="/vendor/epoch.min.css">
+<style type="text/css">
+body { 
+  background:#060610 url('../images/beijing.jpg')center top;
+  color: #CCC;
+}
+</style>
+<title>Diagnostics</title>
+<div class="container">
+  <img src="../images/gao_logo_bai.png" href="#">
+  <div id="chart" class="epoch category10" style="height: 200px;"></div>
+  <div class="well">
+    Average megabits per second: <span id="speed">0</span>
+    <br>
+    Average latency: <span id="latency">0</span> ms
+  </div>
+  <p>Don't leave this page open for too long, as it's basically
+    saturating your network.</p>
+  <p>If you're having connectivity problems, consider using
+    <a href="/d/traceroute/">traceroute</a> and/or
+    <a href="/d/ping/">ping</a>.</p>
+</div>
+<script src="/vendor/jquery.js"></script>
+<script src="/vendor/d3.v3.js"></script>
+<script src="/vendor/epoch.min.js"></script>
+<script>
+var REQUEST_DELAY = 10;
+var MAX_BYTES_PER_SECOND = 1024 * 100;
+var totalBytes = 0;
+var totalMs = 0;
+var numRequests = 0;
+var req;
+var historicData = [{
+  values: [{time: Date.now() / 1000, y: 0}]
+}];
+
+function ping() {
+  req = new XMLHttpRequest();
+  var thisReq = req;
+  var start = Date.now();
+  req.open('GET', '/d/ping/a?bust=' + Date.now());
+  req.onload = function() {
+    if (!(req && req === thisReq)) return;
+    numRequests++;
+    totalMs += (Date.now() - start);
+    totalBytes += req.responseText.length;
+    req = null;
+    if (totalBytes >= MAX_BYTES_PER_SECOND)
+      return;
+    setTimeout(ping, REQUEST_DELAY);
+  };
+  req.onabort = function() {
+    console.log("ABORT");
+  };
+  req.onerror = function() {
+    if (!(req && req === thisReq)) return;
+    req = null;
+  };
+  req.send(null);
+}
+
+function getCurrentMbps() {
+  var bits = totalBytes * 8;
+  var megabits = bits / (1024 * 1024);
+
+  return (megabits / totalMs) * 1000;
+}
+
+function updatePage() {
+  var megabits = getCurrentMbps();
+  var latency = Math.floor(totalMs / numRequests);
+
+  document.getElementById('speed').textContent = megabits.toFixed(1);
+  document.getElementById('latency').textContent = latency.toString();
+  totalMs = 0;
+  totalBytes = 0;
+  numRequests = 0;
+  chart.push([{
+    time: Date.now() / 1000,
+    y: megabits
+  }]);
+  if (req) {
+    req.abort();
+    req = null;
+  }
+  if (!req)
+    ping();
+}
+
+var chart = $('#chart').epoch({
+  type: 'time.area',
+  data: historicData,
+  axes: ['left', 'right', 'bottom']
+});
+
+setInterval(updatePage, 1000);
+
+ping();
+</script>

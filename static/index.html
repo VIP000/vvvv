@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,700italic,400,300,700" rel="stylesheet">
+<link rel="stylesheet" href="/vendor/makerstrap.min.css">
+<link rel="stylesheet" href="/vendor/font-awesome/css/font-awesome.css">
+<!-- DC CSS3 Buttons CSS -->
+<link type="text/css" rel="stylesheet" href="http://cdn.dcodes.net/2/css3_buttons/css/dc_button_styles.css" />
+<style>
+html, body, .browser {
+  height: 100%;
+  background:url('images/adieu.gif')center top; 
+}
+
+.urlbar form {
+  display: flex;
+  display: -webkit-flex;
+  align-items: center;
+  -webkit-align-items: center;
+  background:#e3eaee; /* makerstrap @lightgrey */
+  padding: 5px 0 5px 5px;
+}
+
+.urlbar form > * {
+  height: 35px;
+}
+
+.urlbar form > input[name=url] {
+  flex-grow: 1;
+  -webkit-flex-grow: 1;
+}
+
+.browser {
+  display: flex;
+  display: -webkit-flex;
+  flex-direction: column;
+  -webkit-flex-direction: column;
+}
+
+.browser > .content {
+  flex-grow: 1;
+  -webkit-flex-grow: 1;
+  position: relative;
+}
+
+.browser > .content > iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+</style>
+<title>Baseless Browser</title>
+<div class="browser">
+  <div class="urlbar">
+  <!-- DC CSS3 Buttons Start -->
+    <form action="/proxy">
+      <img src="images/gao_logo.png" href="#" style="margin-left:5px;">
+      <input spellcheck="false" type="text" name="url" class="form-control" placeholder="http://">
+      <button type="submit" class="btn btn-primary">
+        <span class="dc_c3b_large dc_button">Go</span>
+      </button>
+
+      <!-- We're hiding the togetherJS button for now, it's not
+           particularly useful yet. -->
+      <button id="togetherjs" class="btn btn-default" title="Collaborate" style="display: none">
+        <span class="dc_c3b_large dc_button">Collaborate</span>
+      </button>
+
+      <button id="webxray" class="btn btn-default" title="Goggles">
+        <span class="dc_c3b_large dc_button">xXx</span>
+      </button>
+      <button id="spider" class="btn btn-default" href="/spider" target="_blank" title="Spider">
+        <span class="dc_c3b_large dc_button">Spider</span>
+      </button>
+      <a class="btn btn-default" href="/about/" target="_blank" title="About">
+      </a>
+    </form>
+    <!-- DC CSS3 Buttons End -->
+  </div>
+  <div class="content"></div>
+</div>
+<script src="/js/bundle.js"></script>
+<script>
+var querystring = require('querystring');
+var urls = require('./lib/urls');
+var urlbarForm = document.querySelector('.urlbar form');
+var spiderLink = document.getElementById('spider');
+var content = document.querySelector('.content');
+
+function gotoURL(url) {
+  var query = querystring.parse(window.location.hash.slice(1));
+
+  if (query.url == url) return;
+
+  query.url = encodeURIComponent(url);
+  window.location.hash = '#' + querystring.stringify(query);
+}
+
+function getCurrentURL() {
+  var query = querystring.parse(window.location.hash.slice(1));
+  return query.url ? decodeURIComponent(query.url) : '';
+}
+
+function getContentIframe() {
+  return content.childNodes[0] || null;
+}
+
+function removeLinkTargets(parentNode) {
+  var elements = parentNode.querySelectorAll('a[target]');
+  for (var i = 0; i < elements.length; i++)
+    elements[i].removeAttribute('target');
+}
+
+function onHashChange() {
+  var url = getCurrentURL();
+  spiderLink.setAttribute('href', '/spider?url=' + url);
+  if (urlbarForm.url.value != url)
+    urlbarForm.url.value = url;
+  var iframe = getContentIframe();
+  var proxiedURL = urls.rewriteURL(url);
+  var currIframeURL;
+  var updateLocation = function() {
+    var cWin = iframe.contentWindow;
+    var currentURL = urls.extractURL(cWin.location.href);
+    var expectedURL = getCurrentURL();
+
+    if (currentURL && expectedURL && currentURL != expectedURL)
+      gotoURL(currentURL);
+  };
+
+  document.title = url || 'Baseless Browser';
+
+  if (url) {
+    if (iframe) {
+      currIframeURL = urls.extractURL(iframe.contentWindow.location.href);
+      if (currIframeURL == url)
+        return;
+      content.removeChild(iframe);
+    }
+  } else {
+    if (iframe) content.removeChild(iframe);
+    return;
+  }
+
+  iframe = document.createElement('iframe');
+  iframe.setAttribute('src', proxiedURL);
+  iframe.addEventListener('load', function() {
+    iframe.contentWindow.addEventListener('hashchange', updateLocation);
+    updateLocation();
+    removeLinkTargets(iframe.contentDocument);
+  });
+  content.appendChild(iframe);
+}
+
+urlbarForm.addEventListener('submit', function(e) {
+  e.preventDefault();
+  var url = urlbarForm.url.value;
+  if (url && !/^https?:\/\//i.test(url))
+    url = urlbarForm.url.value = 'http://' + url;
+  gotoURL(url);
+});
+
+window.addEventListener('load', function() {
+  window.addEventListener('hashchange', onHashChange);
+  onHashChange();
+});
+
+// TogetherJS integration
+
+document.getElementById("togetherjs").addEventListener('click', function(e) {
+  if (typeof(TogetherJS) == 'undefined')
+    return alert("TogetherJS is not available, please try later.");
+  TogetherJS(this);
+});
+
+window.addEventListener('hashchange', function() {
+  if (typeof(TogetherJS) == 'undefined' || !TogetherJS.running)
+    return;
+
+  TogetherJS.send({type: 'urlChange', url: getCurrentURL()});
+});
+
+TogetherJSConfig_hub_on = {
+  'urlChange': function(msg) {
+    gotoURL(msg.url);
+  },
+  'togetherjs.hello': function(msg) {
+    if (!msg.sameUrl) return;
+    TogetherJS.send({type: 'urlChange', url: getCurrentURL()});
+  }
+};
+
+// X-Ray Goggles integration
+
+document.getElementById("webxray").addEventListener('click', function(e) {
+  var iframe = getContentIframe();
+  var cWin = iframe && iframe.contentWindow;
+  var script;
+
+  if (!cWin) return;
+
+  script = cWin.document.createElement('script');
+  script.setAttribute('src', '/vendor/webxray/webxray.js');
+  script.setAttribute('class', 'webxray');
+  cWin.webxrayWhenGogglesLoad = function(ui) {
+    ui.jQuery.webxraySettings.hackpubURL = window.location.protocol +
+      '//' + window.location.host + '/webxray/';
+  };
+  cWin.document.body.appendChild(script);
+  iframe.focus();
+});
+</script>
+<script src="//togetherjs.com/togetherjs-min.js" async></script>

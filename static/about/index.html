@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,700italic,400,300,700" rel="stylesheet">
+<link rel="stylesheet" href="/vendor/makerstrap.min.css">
+<link rel="stylesheet" href="/vendor/font-awesome/css/font-awesome.css">
+<style type="text/css">
+body { 
+  background:#060610 url('../images/spider.jpg')center top;
+  color: #CCC;
+}
+</style>
+<title>About</title>
+<div class="container">
+  <img src="../images/gao_logo_bai.png" href="#">
+  <p>
+    This is an app that caches your favorite parts of the
+    Web to your computer, so you and your colleagues can do
+    webmaking while offline or on a bandwidth-constrained
+    internet connection.
+  </p>
+  <div class="well">
+    <p>To access your cached network over wi-fi,
+      point other browsers to one of the following URLs:</p>
+    <div id="connection-info"></div>
+  </div>
+  <p>
+    To use it, follow these instructions:
+  </p>
+  <ol>
+    <li>
+      <p>When online, run this app on your computer and
+        <a href="/">browse</a> or <a href="/spider/">spider</a>
+        the sites you want to be able to access and/or remix later.</p>
+    </li>
+    <li>
+      <p>Go offline! You and your colleagues should be able to
+        <a href="/">browse</a> all the sites you visited/spidered earlier.
+        You can even activate the Web X-Ray Goggles to remix them and
+        save your remixes.</p>
+    </li>
+  </ol>
+  <p>
+    If you're having trouble with connectivity, you may want to use
+    the <a href="/d/">Diagnostics</a> page.
+  </p>
+</div>
+<script src="/vendor/react/build/JSXTransformer.js"></script>
+<script src="/vendor/react/build/react-with-addons.js"></script>
+<script src="/js/bundle.js"></script>
+<script src="/js/ipconfig.js"></script>
+<script src="connection-info.jsx" type="text/jsx"></script>
