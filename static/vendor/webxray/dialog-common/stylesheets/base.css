@@ -24,7 +24,7 @@ html, body {
   background-image: -moz-linear-gradient(top, #ffebb2, white 100px);  
   background-image: -o-linear-gradient(top, #ffebb2, white 100px);  
   /* If the browser doesn't support gradients, just use a white background. */
-  background-color: white;
+  background-color: 000000;
 }
 
 h1.title {
@@ -80,7 +80,7 @@ div.ok-button {
   margin: 0.25em;
   padding: 10px;
   border-radius: 3px;
-  background-color: #8ab300;
+  background-color: #3be92a;
   color: white;
   bottom: 10px;
   right: 10px;
